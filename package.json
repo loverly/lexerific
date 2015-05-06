@@ -1,0 +1,22 @@
+{
+  "name": "lexerific",
+  "version": "0.0.1",
+  "author": {
+    "name": "Brandon Eum",
+    "email": "brandon@lover.ly"
+  },
+  "keywords": [
+    "lexer",
+    "parser",
+    "compiler",
+    "tokens",
+    "tokenizer"
+  ],
+  "dependencies": {
+    "awesome-automata": "0.0.2"
+  },
+  "devDependencies": {
+    "chai": "^2.3.0",
+    "mocha": "^2.2.4"
+  }
+}
