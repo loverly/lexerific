@@ -13,7 +13,7 @@
     "tokenizer"
   ],
   "dependencies": {
-    "awesome-automata": "0.0.2",
+    "awesome-automata": "0.0.3",
     "lodash": "^3.8.0"
   },
   "devDependencies": {
