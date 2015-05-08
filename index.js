@@ -12,14 +12,15 @@
 module.exports = (function () {
 
   var _ = require('lodash');
+  var AwesomeAutomata = require('awesome-automata');
 
   var Lexerific = require('./lib/Lexerific');
   var Lexeme = require('./lib/Lexeme');
   var StateGenerator = require('./lib/StateGenerator');
   var Token = require('./lib/Token');
-
+  var TreeNode = require('./lib/TreeNode');
 
   return function LexerificFactory(config) {
-    return new Lexerific(config, _, Lexeme, StateGenerator, Token);
+    return new Lexerific(config, _, AwesomeAutomata, Lexeme, StateGenerator, Token, TreeNode);
   };
 }());
