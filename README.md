@@ -1,5 +1,9 @@
 # Lexerific
 
+
+**WORK IN PROGRESS**
+
+
 A simple streaming tokenizer built on the finite state machine
 [awesome-automata](https://github.com/loverly/awesome-automata).  It implements
 the Node.js [streams API](https://nodejs.org/api/stream.html) to make working
