@@ -5,6 +5,11 @@
     "name": "Brandon Eum",
     "email": "brandon@lover.ly"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/loverly/lexerific"
+  },
+  "license": "MIT",
   "keywords": [
     "lexer",
     "parser",
@@ -13,7 +18,8 @@
     "tokenizer"
   ],
   "dependencies": {
-    "awesome-automata": "0.0.2"
+    "awesome-automata": "0.0.6",
+    "lodash": "^3.8.0"
   },
   "devDependencies": {
     "chai": "^2.3.0",
