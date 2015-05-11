@@ -41,9 +41,29 @@ lexer.addLexeme({
   }
 });
 
+lexer.addLexeme({
+  token: 'other',
+  pattern: [
+    {token: 'b'},
+    {token: 'e', optional: true},
+    {token: 's', optional: true, repeat: true},
+    {token: 'x', repeat: true}
+  ],
+  attributeValue: function (history, input) {
+    var attr = '';
+
+    history.shift(); // Remove root node
+    history.forEach(function (visit) {
+      attr += visit.input.token;
+    });
+
+    return attr;
+  }
+});
+
 lexer.on('data', function (data) {
   console.log('TOKEN:', data);
 });
 
-lexer.write('bx bxx bex bexx bellxx bellaaxx beaaxx');
+lexer.write('bx bxx bex bexx bellxx bellaaxx beaaxx besssxxx');
 lexer.end();
