@@ -1,5 +1,8 @@
 var Lexerific = require('../index');
-var lexer = new Lexerific({mode: 'string'});
+var lexer = new Lexerific({
+  mode: 'string',
+  specialCharacters: ['b', 'e', 'l', 'a', 'x', 'z', 'e', 's']
+});
 
 lexer.setDefaultLexeme({
   token: 'text',
@@ -7,7 +10,7 @@ lexer.setDefaultLexeme({
   partialMatchAttributeValue: function (history, input) {
     var attrVal = '';
     history.shift(); // Remove the root node
-console.log('PARTIAL')
+
     // Add each node from the root to where we are
     history.forEach(function (state) {
       attrVal += state.input.token;
@@ -16,7 +19,7 @@ console.log('PARTIAL')
     return attrVal;
   },
   attributeValue: function (history, input) {
-    return input.token;
+    return input.attributeValue;
   }
 });
 
@@ -84,5 +87,5 @@ lexer.on('data', function (data) {
   console.log('TOKEN:', data);
 });
 
-lexer.write('zavnwoie');
+lexer.write('zavnwoie something stupid besx belllax');
 lexer.end();
