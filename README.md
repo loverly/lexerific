@@ -93,14 +93,37 @@ Because it's pattern would be:
 
 # Specifying a lexicon
 
+When creating a lexerific instance, there are two options:
+
+* `mode` - _string_ or _token_
+* `specialCharacters` - Only available in _string_ mode
+
+The mode determines what type of input the incoming pipe should expect.  In
+`string` mode, it's the typical buffer of binary data that can be converted to
+strings.  In `token` mode, it's a list of previously lexed tokens of the format
+`{token: 'some-token', attributeValue: {arbitraryValue: true}}`.  Lexerific is
+designed to be a multi-pass lexer that can take advantage of the Node.js streams
+API `pipe()` interface to create a transformation pipeline.
+
+For performance reasons, in `string` mode, you should specify an array of
+special characters which will be used to preprocess the incoming text via regular
+expressions for performance reasons.  It will basically separate out normal
+text from potentially special character sequences.  Without the preprocessing
+step, a markdown parser built on lexerific is about 300 times slower than the
+existing `marked` library, with it, it's about 50 times slower.
+
+
 ```javascript
 
     // Supports character-based states and regex-word based states
-    var lexer = new Lexerific({mode: 'character'}); 
+    var lexer = new Lexerific({
+      mode: 'string',
+      specialCharacters: ['<', '>', '(', ')']
+    }); 
     
     // A convenience / batch wrapper around lexer.addLexeme();
     
-    lexer.addLexicon([
+    lexer.addLexemes([
       {
         token: 'em-open',
         pattern: ' _',
@@ -150,62 +173,6 @@ root node.
        text
 
 
-This can be represented by the following tree in javascript:
-
-```javascript
-
-    // Default lexeme (for reference)
-    var defaultLexeme = {
-      token: 'text',
-      attributeValue: true
-    };
-    
-    // Tree generated based on lexicon
-    var tree = {
-      ' ': {
-      
-        '_': {
-        
-          '_': {
-            // Assumes any character after this point is OK
-            terminate: function () {
-              return {token: 'strong-open'};
-            }
-          },
-          
-          terminate: function () {
-            return {token: 'em-open' };
-          }
-        },
-        
-        // This was not actually a special character sequence
-        terminate: function () {
-          return {
-            token: defaultLexeme.token,
-            attributeValue: ' '
-          }
-        }
-      },
-    
-      // The root node's default behavior is to return a default token with the
-      // current input as the attributeValue (when the current input is not a prefix
-      // for any other token
-      terminate: function (input) {
-        return {
-          token: defaultLexeme.token,
-          attributeValue: input
-        }
-      }
-    };
-
-```
-
-
-## Why process each character?
-
-Because it's theoretically faster (if I've done a good job of implementing it) 
-than running constant comparisons with a list of regular expressions.
-
 
 ## Won't specifying a complex lexicon be a real pain?
 
@@ -230,9 +197,9 @@ For example:
         pattern: [
           {token: 'em-open'},
     
-          // Explicitly setting max to false says text can repeat infinitely and still
-          // match
-          {token: 'text', min: 1, max: false},
+          // Match an infinite number of text nodes - a self-referencing state
+          // within the FSM
+          {token: 'text', repeat: true},
           {token: 'em-close'}
         ]
       }
@@ -255,3 +222,105 @@ into paragraphs.  The phases for a Markdown parser are as follows:
 * Pass 2: Identify inline styles
 * Pass 3: Identify paragraph and block styles
 
+
+# API Reference
+
+### Lexerific()
+
+Construct a Lexerific instance.  Lexerific extends from the Node.js 
+[streams api](https://nodejs.org/api/stream.html) and therefore implements all
+of it's parent's APIs.
+
+In addition the constructor accepts the following options:
+
+* `mode` - _string_ or _token_
+* `specialCharacters` - Only available in _string_ mode
+
+See the [specifying a lexicon](#specifying-a-lexicon) section for more details.
+
+
+```javascript
+
+var lexer = new Lexerific({
+  mode: 'string',
+  specialCharacters: ['\\{', '\\}', '\\(', '\\)']
+});
+```
+
+### lexer.addLexeme()
+
+Add a possible token for the lexer.  Configurations are of the following format:
+
+```javascript
+
+lexer.addLexeme({
+  token: 'my-output-token',
+  pattern: [{token: 'em'}, {token: 'text', repeat: true}, {token: 'em'}],
+  attributeValue: function (history, input) {
+    history.splice(0, 2); // remove the root and first em tag
+    history.pop(); // remove the closing em tag
+    
+    // Aggregate the text into one string value
+    return history.reduce(function (prev, current) {
+      return prev + current.input.attributeValue;
+    }, '');
+  }
+});
+
+```
+
+
+#### Lexeme Patterns
+
+Patterns are objects of the format:
+
+```javascript
+
+[
+  {token: 'some-token', repeat: true, inverted: false, optional: true},
+  {token: 'other-token', repeat: false, inverted: false, optional: false}
+]
+
+```
+
+The `token` is the name of the token that this pattern unit matches against.  The
+`repeat` option basically sets a one or more constraint, the `optional` flag sets
+a 0 or 1 instances constraint, and the `inverted` flag says match everything EXCEPT
+for this token.  This MUST be followed by the inverted token, otherwise it will
+match everything.
+
+
+#### Attribute Value Generators
+
+Attribute values for lexemes can either be a static value, or function that can
+be used to generate what the attribute value should be.  The inputs to any
+attribute value generating function are `(history, input)` where history is an
+array of the states that have been visited to match this token (especially
+important when there are a bunch of repeats).  Whatever the return value of the
+the function is, is what is used as the attribute value for the resulting lexer
+token.
+
+```javascript
+  attributeValue: function (history, input) {
+    return input.attributeValue;
+  }
+
+```
+
+
+### lexer.addLexemes()
+
+A helper wrapper around `addLexeme()` that accepts an array of lexeme options
+vs a single lexeme.
+
+
+### lexer.setDefaultLexeme()
+
+The default lexeme is the token that gets generated whenever no token patterns
+are satisfied.  Default lexemes require no patterns because they are triggered
+whenever no other patterns can be satisfied.
+
+In addition to the normal attribute value generator, default lexemes must also
+specify what to do in the case of a partial match (basically got half way
+through some other token but failed to complete).  It takes the same inputs as
+the normal attribute generating function.
